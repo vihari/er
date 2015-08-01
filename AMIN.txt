@@ -1,0 +1,268 @@
+=============================================================================================
+-- ************Purpose		:AMIN (Approximate Matching of Indian Names)
+-- ************Developed by	: Technical Team Election, Commission of India, New Delhi.
+
+--==============================================================================================
+
+Imports System.Text.RegularExpressions
+Public Class AMIN
+Dim i As Integer
+    Dim j As Integer
+    Dim source() As Char
+    Dim target() As Char
+    Dim Simplificationcost As Decimal
+    Function AMIN_percentage(ByVal strsource As String, ByVal strtarget As String) As Decimal
+        Dim decPercentage As Decimal
+        Dim len1 As Integer = Len(strsource)
+        Dim len2 As Integer = Len(strtarget)
+       
+        Dim max As Integer
+        max = Math.Max(len1, len2)
+        decPercentage = System.Math.Round((1.0 - ((CDec(AMIN_English(strsource, strtarget)) / max))) * 100, 2)
+        Return decPercentage
+    End Function
+    'ASSUMPTION IS THAT THE NAME STRINGS ARE CLEAN AND IN UPPERCASE 
+    Function AMIN_English(ByVal str1 As String, ByVal str2 As String)
+        Dim d(Len(str1), Len(str2)) As Decimal
+        Dim i As Integer
+        Dim j As Integer
+        Dim value1 As Decimal
+        Dim value2 As Decimal
+        Dim value3 As Decimal
+        Dim minValue As Decimal
+        'Building Source array
+        str1 = "#" & str1 & "!"
+        source = str1.ToCharArray
+        '******************
+        'Building Target array
+        str2 = "#" & str2 & "!"
+        target = str2.ToCharArray
+        '******************
+        
+
+        Dim len1 As Integer = str1.Length - 2
+        Dim len2 As Integer = str2.Length - 2
+
+        For i = 0 To len1
+            d(i, 0) = i
+        Next
+        For j = 0 To len2
+            d(0, j) = j
+        Next
+        For i = 1 To len1
+            For j = 1 To len2
+                Dim values(2) As Decimal
+                value1 = d(i - 1, j) + costInsertDelete_EN(source(i), source(i - 1), source(i + 1)) 'cost deletion
+                value2 = d(i, j - 1) + costInsertDelete_EN(target(j), target(j - 1), target(j + 1)) 'cost insertion
+                minValue = Math.Min(value1, value2)
+                value3 = d(i - 1, j - 1) + costsubstitution_EN(source(i), target(j)) 'cost substitution
+                minValue = Math.Min(value3, minValue)
+                d(i, j) = minValue
+                ReDim Preserve values(1)
+                If (i > 2 And j > 2) Then
+                    If source(i) = target(j - 1) And source(i - 1) = target(j) Then
+                        values(0) = d(i, j)
+                        values(1) = d(i - 2, j - 2) + costswapping_EN(source(i), target(j))
+                        d(i, j) = Min(values)
+                    End If
+                End If
+                ReDim Preserve values(1)
+                ReDim Preserve values(1)
+                '"KS" is treated almost equal to "X"
+                'value of matrix differs where KS is matched with X and it is different when X is matched with KS
+                ' as length row and columns differs in both cases
+                'that is why two cases are handled differently.
+                Simplificationcost = 0.95
+                If source(i) = "S" And source(i - 1) = "K" Then
+                    If target(j) = "X" Then
+                        values(0) = d(i, j)
+                        If d(i - 1, j - 1) > 0.95 Then
+                            values(1) = d(i - 1, j - 1) - Simplificationcost
+                        Else
+                            values(1) = d(i, j - 1) - Simplificationcost
+                        End If
+                        d(i, j) = Min(values)
+                    End If
+                ElseIf target(j) = "S" Then
+                    If target(j - 1) = "K" And source(i) = "X" Then
+                        values(0) = d(i, j)
+                        ' values(1) = d(i - 1, j - 1) - SimplificationCost
+                        values(1) = d(i, j - 1) - Simplificationcost
+                        d(i, j) = Min(values)
+                    End If
+                End If
+                '"EE" is treated almost equal to "I"
+                If source(i) = "E" And source(i - 1) = "E" Then
+                    If j = i - 1 Then
+                        If target(j) = "I" Then
+                            values(0) = d(i, j)
+                            If j > 1 Then
+                                Simplificationcost = 0.2 'cost is less if case occurs in between
+                            Else
+                                Simplificationcost = 0.95 'cost is more if case occurs at the start of word
+                            End If
+                            'If d(i - 1, j - 1) < 0.3 Then SimplificationCost = 0
+                            values(1) = d(i - 1, j - 1) - Simplificationcost
+                            d(i, j) = Min(values)
+                        End If
+                    End If
+                    '"OO" is treated almost equal to "O"
+                ElseIf source(i) = "O" And source(i - 1) = "O" Then
+                    If j = i - 1 Then
+                        If target(j) = "U" Then
+                            values(0) = d(i, j)
+                            If j > 1 Then
+                                Simplificationcost = 0.2
+                            Else
+                                Simplificationcost = 0.95
+                            End If
+                            'If d(i - 1, j - 1) < 0.3 Then SimplificationCost = 0
+                            values(1) = d(i - 1, j - 1) - Simplificationcost
+                            d(i, j) = Min(values)
+                        End If
+                    End If
+                ElseIf target(j) = "E" And target(j - 1) = "E" Then
+                    If i = j - 1 Then
+                        If source(i) = "I" Then
+                            values(0) = d(i, j)
+                            If i > 1 Then
+                                Simplificationcost = 0.2
+                            Else
+                                Simplificationcost = 0.95
+                            End If
+                            ' If d(i - 1, j - 1) < 0.3 Then SimplificationCost = 0
+                            values(1) = d(i - 1, j - 1) - Simplificationcost
+                            d(i, j) = Min(values)
+                        End If
+                    End If
+                ElseIf target(j) = "O" And target(j - 1) = "O" Then
+                    If i = j - 1 Then
+                        If source(i) = "U" Then
+                            values(0) = d(i, j)
+                            If i > 1 Then
+                                Simplificationcost = 0.2 'cost is less if case occurs in between
+                            Else
+                                Simplificationcost = 0.95 'cost is more if case occurs at the start of word
+                            End If
+                            'If d(i - 1, j - 1) < 0.3 Then SimplificationCost = 0
+                            values(1) = d(i - 1, j - 1) - Simplificationcost
+
+                            d(i, j) = Min(values)
+                        End If
+                    End If
+                End If
+            Next
+        Next
+        Dim intdist As Decimal
+        intdist = d(len1, len2)
+        source.Clear(source, 0, source.Length)
+        target.Clear(target, 0, target.Length)
+        buildtable(d)
+        Return intdist
+    End Function
+    'This function can be used in substitution of two characters based on the requirement for example: GY-JN for hindi 
+    Function twoCharacterSubstitution(ByVal srcValue As String, ByVal targetValue As String)
+        Return 0.0
+    End Function
+    Function isNearbyFirstChar_EN(ByVal char1 As Char, ByVal char1Next As Char, ByVal char2 As Char, ByVal char2Next As Char) As Boolean
+        If char1 = char2 Then Return True
+        If IsVowel(char1) And IsVowel(char2) And IsValidVowelCombination(char1, char2) Then Return True
+        Select Case char1 & char1Next & char2
+            Case "ESS", "YOU", "YUU", "GNN", "PSS"
+                Return True
+        End Select
+        Select Case char1 & char2 & char2Next
+            Case "SES", "UYO", "UYU", "NGN", "SPS"
+                Return True
+        End Select
+        Select Case char1 & char2
+            Case "CK", "KC", "KQ", "QK", "PF", "FP", "GJ", "JG", "BV", "VB", "VW", "WV", "BW", "WB", "JZ", "ZJ", "XZ", "ZX", "XS", "SX", "ZS", "SZ", "SC", "CS", "YU", "UY"
+                Return True
+            Case Else
+                Return False
+        End Select
+    End Function
+    Function IsValidVowelCombination(ByVal char1 As Char, ByVal char2 As Char) As Boolean
+        'following are not the nearest combinations of vowels 
+        Select Case char1 & char2
+            Case "AU", "UA", "EU", "UE", "IU", "UI", "IO", "OI"
+                Return False
+            Case Else
+                Return True
+        End Select
+    End Function
+    Private Function costInsertDelete_EN(ByVal thischar As Char, ByVal prevchar As Char, ByVal nextchar As Char)
+        'Cost Insertion for the Target Character and cost deletion for the source character
+        If Asc(thischar) < 65 Or Asc(thischar) > 90 Then
+            Return 0.05
+        ElseIf (thischar = prevchar) And thischar <> "E" And thischar <> "O" Then
+            'ElseIf (thischar = prevchar) Then
+            Return 0.15
+        End If
+        If IsVowel(thischar) Then
+            Return 0.25
+        ElseIf Regex.IsMatch(thischar, "[WY]") = True Then
+            Return 0.5
+        ElseIf thischar = "H" Then
+            If Regex.IsMatch(prevchar, "[BCDGKPJS]") = True Then
+                Return 0.15
+            Else
+                Return 0.25
+            End If
+        ElseIf thischar = "C" And Regex.IsMatch(prevchar, "[SX]") = True Then
+            Return 0.25
+        ElseIf thischar = "N" And IsConsonant(nextchar) Then
+            Return 0.35
+        Else
+            Return 1.0
+        End If
+    End Function
+    Private Function costsubstitution_EN(ByVal chr1 As Char, ByVal chr2 As Char) As Decimal
+        'cost of substituting source character with target character, only if the substitution is valid
+        If chr1 = chr2 Then
+            Return 0.0
+        ElseIf IsVowel(chr1) And IsVowel(chr2) And IsValidVowelCombination(chr1, chr2) Then
+            Return 0.25
+        ElseIf (Asc(chr1) < 65 Or Asc(chr1) > 90) Or (Asc(chr2) < 65 Or Asc(chr2) > 90) Then
+            Return 0.05
+        End If
+        Select Case chr1 & chr2
+            Case "YI", "IY", "RD", "DR", "CK", "KC", "CS", "SC", "GJ", "JG", "ZJ", "JZ", "XZ", "ZX", "XS", "SX", "XJ", "JS", "SZ", "ZS"
+                Return 0.25
+            Case "KQ", "QK", "WV", "VW", "BV", "VB", "PF", "FP"
+                Return 0.15
+            Case Else
+                Return 1.0
+        End Select
+    End Function
+    Private Function costswapping_EN(ByVal chr1 As Char, ByVal chr2 As Char) As Decimal
+        'cost of swapping two characters
+        If IsVowel(chr1) And IsVowel(chr2) And IsValidVowelCombination(chr1, chr2) Then
+            Return 0.15
+        ElseIf (IsVowel(chr1) And Regex.IsMatch(chr2, "[BCDFGHJKLMNPQSTVWXYZ]") = True) Or (IsVowel(chr2) And Regex.IsMatch(chr1, "[BCDFGHJKLMNPQSTVWXYZ]") = True) Then
+            Return 0.25
+        ElseIf (IsVowel(chr1) And chr2 = "R") Or (IsVowel(chr2) And chr1 = "R") Then
+            Return 0.15
+        Else
+            Return 0.35
+        End If
+    End Function
+    Private Function IsVowel(ByVal chr As Char) As Boolean
+        IsVowel = False
+        If Regex.IsMatch(chr, "[AEIOU]") = True Then Return True
+    End Function
+    Private Function IsConsonant(ByVal chr As Char) As Boolean
+        IsConsonant = False
+        If Regex.IsMatch(chr, "[^AEIOU]") = True Then Return True
+    End Function
+    Private Function Min(ByVal values() As Decimal) As Object
+        Dim i As Integer
+        Dim min_value As Object
+        min_value = values(LBound(values))
+        For i = LBound(values) + 1 To UBound(values)
+            If min_value > values(i) Then min_value = values(i)
+        Next i
+        Min = min_value
+    End Function
+
+End Class
