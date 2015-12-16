@@ -34,7 +34,6 @@ import org.apache.lucene.util.*;
  * redirect table that contains
  * | rd_from | rd_namespace | rd_title | rd_interwiki | rd_fragment |
  *
- * The final indexTitlesWithRedirects contains
  * Note all pages other than article namespace are excluded from being added to the indexTitlesWithRedirects.
  * A document is added for every title irrespective of whether it is a redirect or not
  * The index contains title (text field and hence tokenized), id (stringField), is_redirect(stored field), redirect (String field), length (stored field)
