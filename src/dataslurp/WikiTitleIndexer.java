@@ -28,7 +28,7 @@ import org.apache.lucene.util.*;
  * Reads pages and redirect tables from Wikipedia dumps and builds a lucene index with documents and fields as described towards the end of this comment box.
  * See the method indexTitlesWithRedirects, set the variables REDIRECT_FILE, PAGE_FILE and indexPath for pointing to the right locations
  * The code is a little less organized in comparison to the PageLinksIndexer.java in the same folder, it is not resilient to the table structure.
- * The tables were defined as shown when this code was last used.
+ * The tables are defined as shown below when this code was last used.
  *
  * page_id | page_namespace | page_title | page_restrictions | page_counter | page_is_redirect | page_is_new | page_random | page_touched | page_links_updated | page_latest | page_len | page_content_model |
  * redirect table that contains
