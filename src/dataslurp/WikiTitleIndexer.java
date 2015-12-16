@@ -20,15 +20,23 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.*;
 
 /**
+ * @author Vihari Piratla
+ * email: vihari[nospace]piratla[at]gmail[dot]com
+ * 
  * Indexing completed in 838298ms (10 mins)
  *
- * Reads pages table
+ * Reads pages and redirect tables from Wikipedia dumps and builds a lucene index with documents and fields as described towards the end of this comment box.
+ * See the method indexTitlesWithRedirects, set the variables REDIRECT_FILE, PAGE_FILE and indexPath for pointing to the right locations
+ * The code is a little less organized in comparison to the PageLinksIndexer.java in the same folder, it is not resilient to the table structure.
+ * The tables were defined as shown when this code was last used.
+ *
  * page_id | page_namespace | page_title | page_restrictions | page_counter | page_is_redirect | page_is_new | page_random | page_touched | page_links_updated | page_latest | page_len | page_content_model |
  * redirect table that contains
  * | rd_from | rd_namespace | rd_title | rd_interwiki | rd_fragment |
  *
  * The final indexTitlesWithRedirects contains
  * Note all pages other than article namespace are excluded from being added to the indexTitlesWithRedirects.
+ * A document is added for every title irrespective of whether it is a redirect or not
  * The index contains title (text field and hence tokenized), id (stringField), is_redirect(stored field), redirect (String field), length (stored field)
  */
 public class WikiTitleIndexer {
@@ -39,10 +47,10 @@ public class WikiTitleIndexer {
     static IndexReader		reader			= null;
     static IndexSearcher	searcher		= null;
 
-    static String			indexPath		= "indexes" + File.separator + "wiki_index";
+    static String			indexPath	= "indexes" + File.separator + "wiki_index";
     static String			REDIRECT_FILE	= "wiki-data" + File.separator + "enwiki-latest-redirect.sql.gz";
-    static String			PAGE_FILE		= "wiki-data" + File.separator + "enwiki-latest-page.sql.gz";
-    public static String[] STOP_WORDS		= new String[] { "but", "be", "with", "such", "for", "no", "will", "not", "are", "and", "their", "if", "this", "on", "into", "a", "there", "in", "that", "they", "was", "it", "an", "the", "as", "at", "these", "to", "of" };
+    static String			PAGE_FILE       = "wiki-data" + File.separator + "enwiki-latest-page.sql.gz";
+    public static String[] STOP_WORDS = new String[] { "but", "be", "with", "such", "for", "no", "will", "not", "are", "and", "their", "if", "this", "on", "into", "a", "there", "in", "that", "they", "was", "it", "an", "the", "as", "at", "these", "to", "of" };
 
     public static void prepareToReadIndex(String indexPath) {
         try {
